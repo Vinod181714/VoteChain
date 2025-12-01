@@ -1,0 +1,75 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { BookUser, Hand, LayoutDashboard, ShieldCheck } from 'lucide-react';
+
+import {
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+} from '@/components/ui/sidebar';
+import { VoteChainLogo } from '@/components/vote-chain-logo';
+import { useAuth } from '@/lib/hooks';
+import { Separator } from './ui/separator';
+
+export function AppSidebar() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+
+  const menuItems = [
+    {
+      href: '/',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      active: pathname === '/',
+      roles: ['Voter', 'Admin'],
+    },
+    {
+      href: '/admin',
+      label: 'Admin Panel',
+      icon: BookUser,
+      active: pathname === '/admin',
+      roles: ['Admin'],
+    },
+  ];
+
+  return (
+    <>
+      <SidebarHeader>
+        <VoteChainLogo />
+      </SidebarHeader>
+      <SidebarContent className="p-2">
+        <SidebarMenu>
+          {menuItems.map(
+            (item) =>
+              item.roles.includes(user?.role || '') && (
+                <SidebarMenuItem key={item.label}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={item.active}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+          )}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter>
+        <Separator className="my-2"/>
+        <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span>Powered by Blockchain</span>
+        </div>
+      </SidebarFooter>
+    </>
+  );
+}
