@@ -1,0 +1,20 @@
+export type User = {
+  id: string;
+  email: string;
+  role: 'Admin' | 'Voter';
+  voterId: string;
+};
+
+export type Candidate = {
+  id: number;
+  name: string;
+  votes: number;
+};
+
+export type Election = {
+  id: string;
+  name: string;
+  imageId: string;
+  candidates: Candidate[];
+  voted: string[]; // array of voterIds who have voted
+};
