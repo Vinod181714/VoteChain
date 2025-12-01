@@ -1,0 +1,29 @@
+import { RegisterForm } from '@/components/register-form';
+import { VoteChainLogo } from '@/components/vote-chain-logo';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import Link from 'next/link';
+
+export default function RegisterPage() {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4">
+            <VoteChainLogo />
+          </div>
+          <CardTitle>Register to Vote</CardTitle>
+          <CardDescription>Create your account to start voting securely.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RegisterForm />
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" className="underline hover:text-primary">
+              Sign In
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
