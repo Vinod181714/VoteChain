@@ -49,3 +49,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+'use client';
+
+import type { ReactNode } from 'react';
+import { AuthProvider } from '@/context/auth-provider';
+import { ElectionProvider } from '@/context/election-provider';
+
+export function AppProviders({ children }: { children: ReactNode }) {
+  return (
+    <AuthProvider>
+      <ElectionProvider>{children}</ElectionProvider>
+    </AuthProvider>
+  );
+}
