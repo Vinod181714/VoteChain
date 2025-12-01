@@ -113,3 +113,95 @@ export default function ElectionPage() {
     </AppLayout>
   );
 }
+
+'use client';
+
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useElections } from '@/lib/hooks';
+import { AppLayout } from '@/components/app-layout';
+import { ResultsChart } from '@/components/results-chart';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, ShieldCheck, Users } from 'lucide-react';
+
+export default function ResultsPage() {
+  const { id } = useParams();
+  const { elections } = useElections();
+  const election = elections.find((e) => e.id === id);
+
+  if (!election) {
+    return (
+      <AppLayout>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Election not found</h1>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const totalVotes = election.candidates.reduce((sum, c) => sum + c.votes, 0);
+
+  return (
+    <AppLayout>
+        <div className="space-y-8">
+            <div>
+                <Button variant="ghost" asChild className="mb-4">
+                    <Link href="/"><ArrowLeft className="mr-2 h-4 w-4"/> Back to Elections</Link>
+                </Button>
+                <h1 className="text-3xl font-bold tracking-tight">{election.name} - Results</h1>
+                <p className="text-muted-foreground flex items-center gap-2 mt-2">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                These results are immutable and transparently recorded on the blockchain.
+                </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-3">
+                <Card className="md:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Vote Distribution</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ResultsChart data={election.candidates} />
+                    </CardContent>
+                </Card>
+                <div className="space-y-8">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Total Votes Cast</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{totalVotes.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground">across all candidates</p>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Vote Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Candidate</TableHead>
+                            <TableHead className="text-right">Votes</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {election.candidates.sort((a,b) => b.votes - a.votes).map((candidate) => (
+                            <TableRow key={candidate.id}>
+                                <TableCell className="font-medium">{candidate.name}</TableCell>
+                                <TableCell className="text-right">{candidate.votes.toLocaleString()}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+  );
+}
