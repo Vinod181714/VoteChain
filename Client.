@@ -1,0 +1,115 @@
+'use client';
+
+import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useElections, useAuth } from '@/lib/hooks';
+import { AppLayout } from '@/components/app-layout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Hand, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
+
+export default function ElectionPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const { elections, castVote } = useElections();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const election = elections.find((e) => e.id === id);
+
+  if (!election) {
+    return (
+      <AppLayout>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Election not found</h1>
+          <p className="text-muted-foreground">The election you are looking for does not exist.</p>
+          <Button asChild className="mt-4">
+            <Link href="/">Go to Dashboard</Link>
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const hasVoted = user ? election.voted.includes(user.voterId) : false;
+
+  const handleSubmitVote = () => {
+    if (!user || selectedCandidate === null) return;
+
+    setIsSubmitting(true);
+    // Simulate blockchain transaction delay
+    setTimeout(() => {
+      const success = castVote(election.id, selectedCandidate, user.voterId);
+      if (success) {
+        toast({
+          title: 'Vote Cast Successfully!',
+          description: 'Your vote has been recorded on the blockchain.',
+        });
+        router.push(`/election/${election.id}/results`);
+      }
+      setIsSubmitting(false);
+    }, 1500);
+  };
+  
+  return (
+    <AppLayout>
+      <div className="max-w-2xl mx-auto">
+        <Button variant="ghost" asChild className="mb-4">
+            <Link href="/"><ArrowLeft className="mr-2 h-4 w-4"/> Back to Elections</Link>
+        </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-3xl">{election.name}</CardTitle>
+            <CardDescription>Select a candidate and cast your vote.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {hasVoted ? (
+                <Alert variant="default" className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-700 dark:text-green-400">Vote Confirmed</AlertTitle>
+                    <AlertDescription className="text-green-600 dark:text-green-500">
+                    You have already cast your vote in this election. Your choice is secured on the blockchain.
+                    </AlertDescription>
+              </Alert>
+            ) : (
+            <RadioGroup
+              onValueChange={(value) => setSelectedCandidate(parseInt(value))}
+              disabled={hasVoted || isSubmitting}
+            >
+              {election.candidates.map((candidate) => (
+                <Label
+                  key={candidate.id}
+                  htmlFor={String(candidate.id)}
+                  className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:border-primary"
+                >
+                  <span className="text-lg font-medium">{candidate.name}</span>
+                  <RadioGroupItem value={String(candidate.id)} id={String(candidate.id)} />
+                </Label>
+              ))}
+            </RadioGroup>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full"
+              size="lg"
+              disabled={!selectedCandidate || hasVoted || isSubmitting}
+              onClick={handleSubmitVote}
+            >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {hasVoted ? 'You Have Voted' : 'Submit Secure Vote'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </AppLayout>
+  );
+}
