@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract VoteChain {
+    struct Candidate {
+        uint id;
+        string name;
+        uint voteCount;
+    }
+
+    struct Election {
+        uint id;
+        string name;
+        mapping(uint => Candidate) candidates;
+        uint candidatesCount;
+        mapping(address => bool) voters;
+    }
+
+    address public owner;
+    mapping(uint => Election) public elections;
+    uint public electionsCount;
+
+    event ElectionCreated(uint indexed electionId, string name);
+    event Voted(uint indexed electionId, uint indexed candidateId, address voter);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can perform this action.");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function createElection(string memory _name, string[] memory _candidateNames) public onlyOwner {
+        electionsCount++;
+        elections[electionsCount].id = electionsCount;
+        elections[electionsCount].name = _name;
+
+        for (uint i = 0; i < _candidateNames.length; i++) {
+            elections[electionsCount].candidatesCount++;
+            elections[electionsCount].candidates[elections[electionsCount].candidatesCount] = Candidate(elections[electionsCount].candidatesCount, _candidateNames[i], 0);
+        }
+
+        emit ElectionCreated(electionsCount, _name);
+    }
+
+    function vote(uint _electionId, uint _candidateId) public {
+        require(_electionId > 0 && _electionId <= electionsCount, "Invalid election ID.");
+        require(!elections[_electionId].voters[msg.sender], "You have already voted in this election.");
+        require(_candidateId > 0 && _candidateId <= elections[_electionId].candidatesCount, "Invalid candidate ID.");
+
+        elections[_electionId].voters[msg.sender] = true;
+        elections[_electionId].candidates[_candidateId].voteCount++;
+
+        emit Voted(_electionId, _candidateId, msg.sender);
+    }
+
+    function getCandidates(uint _electionId) public view returns (Candidate[] memory) {
+        require(_electionId > 0 && _electionId <= electionsCount, "Invalid election ID.");
+        
+        Candidate[] memory _candidates = new Candidate[](elections[_electionId].candidatesCount);
+        for(uint i = 1; i <= elections[_electionId].candidatesCount; i++) {
+            _candidates[i-1] = elections[_electionId].candidates[i];
+        }
+        return _candidates;
+    }
+
+    function getElectionName(uint _electionId) public view returns (string memory) {
+        require(_electionId > 0 && _electionId <= electionsCount, "Invalid election ID.");
+        return elections[_electionId].name;
+    }
+}
