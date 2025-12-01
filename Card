@@ -1,0 +1,168 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useElections } from '@/lib/hooks';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { BarChart2, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '@/lib/hooks';
+import { useRouter } from 'next/navigation';
+
+export function AdminDashboard() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const { elections, createElection } = useElections();
+  const [electionName, setElectionName] = useState('');
+  const [candidates, setCandidates] = useState(['', '']);
+
+  if (user?.role !== 'Admin') {
+    router.push('/');
+    return null;
+  }
+
+  const handleCandidateChange = (index: number, value: string) => {
+    const newCandidates = [...candidates];
+    newCandidates[index] = value;
+    setCandidates(newCandidates);
+  };
+
+  const addCandidate = () => {
+    setCandidates([...candidates, '']);
+  };
+
+  const removeCandidate = (index: number) => {
+    if (candidates.length > 2) {
+      const newCandidates = candidates.filter((_, i) => i !== index);
+      setCandidates(newCandidates);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validCandidates = candidates.map(c => c.trim()).filter(c => c !== '');
+    if (electionName && validCandidates.length >= 2) {
+      createElection(electionName, validCandidates);
+      setElectionName('');
+      setCandidates(['', '']);
+    }
+  };
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-3">
+      <div className="lg:col-span-1">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New Election</CardTitle>
+            <CardDescription>
+              Set up a new election with a name and at least two candidates.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="election-name">Election Name</Label>
+                <Input
+                  id="election-name"
+                  placeholder="e.g., Presidential Election 2024"
+                  value={electionName}
+                  onChange={(e) => setElectionName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-4">
+                <Label>Candidates</Label>
+                {candidates.map((candidate, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      placeholder={`Candidate ${index + 1}`}
+                      value={candidate}
+                      onChange={(e) => handleCandidateChange(index, e.target.value)}
+                      required
+                    />
+                    {candidates.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCandidate(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={addCandidate}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add Candidate
+                </Button>
+              </div>
+              <Button type="submit" className="w-full">
+                Create Election
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="lg:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Manage Elections</CardTitle>
+            <CardDescription>View and manage all elections.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Election Name</TableHead>
+                  <TableHead>Candidates</TableHead>
+                  <TableHead>Total Votes</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {elections.map((election) => (
+                  <TableRow key={election.id}>
+                    <TableCell className="font-medium">{election.name}</TableCell>
+                    <TableCell>{election.candidates.length}</TableCell>
+                    <TableCell>
+                      {election.candidates.reduce((acc, c) => acc + c.votes, 0)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link href={`/election/${election.id}/results`} passHref>
+                        <Button variant="ghost" size="sm">
+                          <BarChart2 className="mr-2 h-4 w-4" />
+                          Results
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
