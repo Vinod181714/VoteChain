@@ -1,0 +1,77 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { useElections, useAuth } from '@/lib/hooks';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Check, Hand, BarChart2 } from 'lucide-react';
+
+export function VoterDashboard() {
+  const { elections } = useElections();
+  const { user } = useAuth();
+
+  const getImage = (id: string) => {
+    return PlaceHolderImages.find((img) => img.id === id);
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Available Elections</h1>
+        <p className="text-muted-foreground">Cast your vote on the blockchain.</p>
+      </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {elections.map((election) => {
+            const hasVoted = user ? election.voted.includes(user.voterId) : false;
+            const image = getImage(election.imageId);
+
+            return (
+          <Card key={election.id} className="flex flex-col">
+            <CardHeader className='relative h-48'>
+              {image && (
+                <Image
+                  src={image.imageUrl}
+                  alt={image.description}
+                  data-ai-hint={image.imageHint}
+                  fill
+                  className="object-cover rounded-t-lg"
+                />
+              )}
+               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-t-lg" />
+               <div className="absolute bottom-0 left-0 p-6">
+                <CardTitle className="text-white">{election.name}</CardTitle>
+                <CardDescription className="text-gray-300">{election.candidates.length} candidates</CardDescription>
+               </div>
+            </CardHeader>
+            <CardContent className="flex-grow pt-6">
+                {hasVoted ? (
+                    <div className='flex items-center text-green-600'>
+                        <Check className="w-5 h-5 mr-2"/>
+                        <p className="font-medium">You have already voted in this election.</p>
+                    </div>
+                ) : (
+                     <p className="text-muted-foreground">Your vote is secure, transparent, and immutable on the blockchain.</p>
+                )}
+            </CardContent>
+            <CardFooter className="flex justify-between">
+                <Link href={`/election/${election.id}/results`} passHref>
+                    <Button variant="outline">
+                        <BarChart2 className="mr-2 h-4 w-4" />
+                        View Results
+                    </Button>
+                </Link>
+              <Link href={`/election/${election.id}`} passHref>
+                <Button disabled={hasVoted}>
+                    <Hand className="mr-2 h-4 w-4" />
+                    {hasVoted ? 'Voted' : 'Vote Now'}
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        )})}
+      </div>
+    </div>
+  );
+}
