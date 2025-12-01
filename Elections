@@ -1,0 +1,74 @@
+'use client';
+
+import type { ReactNode } from 'react';
+import { createContext, useState, useCallback, useMemo } from 'react';
+import { mockElections } from '@/lib/mock-data';
+import type { Election, Candidate } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+
+interface ElectionContextType {
+  elections: Election[];
+  createElection: (name: string, candidates: string[]) => void;
+  castVote: (electionId: string, candidateId: number, voterId: string) => boolean;
+}
+
+export const ElectionContext = createContext<ElectionContextType | null>(null);
+
+export function ElectionProvider({ children }: { children: ReactNode }) {
+  const [elections, setElections] = useState<Election[]>(mockElections);
+  const { toast } = useToast();
+
+  const createElection = useCallback((name: string, candidateNames: string[]) => {
+    const newElection: Election = {
+      id: name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+      name,
+      imageId: `election-${(elections.length % 3) + 1}`,
+      candidates: candidateNames.map((cName, index) => ({
+        id: index + 1,
+        name: cName,
+        votes: 0,
+      })),
+      voted: [],
+    };
+    setElections((prev) => [newElection, ...prev]);
+    toast({
+      title: 'Election Created',
+      description: `The election "${name}" has been successfully created.`,
+    });
+  }, [toast, elections.length]);
+
+  const castVote = useCallback((electionId: string, candidateId: number, voterId: string) => {
+    let success = false;
+    setElections((prev) =>
+      prev.map((election) => {
+        if (election.id === electionId) {
+          if (election.voted.includes(voterId)) {
+            toast({ title: "Vote Failed", description: "You have already voted in this election.", variant: "destructive" });
+            return election;
+          }
+
+          const updatedCandidates = election.candidates.map((candidate) =>
+            candidate.id === candidateId
+              ? { ...candidate, votes: candidate.votes + 1 }
+              : candidate
+          );
+          
+          const updatedElection = {
+            ...election,
+            candidates: updatedCandidates,
+            voted: [...election.voted, voterId],
+          };
+          
+          success = true;
+          return updatedElection;
+        }
+        return election;
+      })
+    );
+    return success;
+  }, [toast]);
+
+  const value = useMemo(() => ({ elections, createElection, castVote }), [elections, createElection, castVote]);
+
+  return <ElectionContext.Provider value={value}>{children}</ElectionContext.Provider>;
+}
